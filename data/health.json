@@ -1,7 +1,7 @@
 {
- "run_at": "2026-10-31T17:28:50.295582+00:00",
- "added": 209,
- "total": 209,
+ "run_at": "2026-10-31T21:28:47.559760+00:00",
+ "added": 63,
+ "total": 272,
  "ai_claims_rejected": 0,
  "feeds": [
   {
@@ -17,7 +17,7 @@
    "url": "https://www.thedailystar.net/news/bangladesh/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-10-31T15:47:57+00:00",
+   "newest": "2026-10-31T18:00:00+00:00",
    "error": null
   },
   {
@@ -31,17 +31,17 @@
   {
    "source": "Prothom Alo English",
    "url": "https://en.prothomalo.com/feed/",
-   "ok": true,
-   "items": 9,
-   "newest": "2026-10-31T17:01:47+00:00",
-   "error": null
+   "ok": false,
+   "items": 0,
+   "newest": null,
+   "error": "no entries (not an RSS feed?)"
   },
   {
    "source": "Dhaka Tribune",
    "url": "https://www.dhakatribune.com/feed/",
    "ok": true,
    "items": 100,
-   "newest": "2026-10-31T17:00:31+00:00",
+   "newest": "2026-10-31T18:34:31+00:00",
    "error": null
   },
   {
@@ -49,7 +49,7 @@
    "url": "https://www.tbsnews.net/bangladesh/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-10-31T16:15:00+00:00",
+   "newest": "2026-10-31T19:25:00+00:00",
    "error": null
   },
   {
@@ -57,7 +57,7 @@
    "url": "https://www.tbsnews.net/economy/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-10-31T15:50:00+00:00",
+   "newest": "2026-10-31T18:45:00+00:00",
    "error": null
   },
   {
@@ -65,7 +65,7 @@
    "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
    "ok": true,
    "items": 30,
-   "newest": "2026-10-31T16:53:30+00:00",
+   "newest": "2026-10-31T21:26:37+00:00",
    "error": null
   }
  ]
