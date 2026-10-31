@@ -1,0 +1,72 @@
+{
+ "run_at": "2026-10-31T17:28:50.295582+00:00",
+ "added": 209,
+ "total": 209,
+ "ai_claims_rejected": 0,
+ "feeds": [
+  {
+   "source": "The Daily Star",
+   "url": "https://www.thedailystar.net/opinion/editorial/rss.xml",
+   "ok": true,
+   "items": 10,
+   "newest": "2026-10-31T13:13:08+00:00",
+   "error": null
+  },
+  {
+   "source": "The Daily Star",
+   "url": "https://www.thedailystar.net/news/bangladesh/rss.xml",
+   "ok": true,
+   "items": 10,
+   "newest": "2026-10-31T15:47:57+00:00",
+   "error": null
+  },
+  {
+   "source": "The Daily Star",
+   "url": "https://www.thedailystar.net/business/rss.xml",
+   "ok": true,
+   "items": 10,
+   "newest": "2026-10-31T18:00:00+00:00",
+   "error": null
+  },
+  {
+   "source": "Prothom Alo English",
+   "url": "https://en.prothomalo.com/feed/",
+   "ok": true,
+   "items": 9,
+   "newest": "2026-10-31T17:01:47+00:00",
+   "error": null
+  },
+  {
+   "source": "Dhaka Tribune",
+   "url": "https://www.dhakatribune.com/feed/",
+   "ok": true,
+   "items": 100,
+   "newest": "2026-10-31T17:00:31+00:00",
+   "error": null
+  },
+  {
+   "source": "The Business Standard",
+   "url": "https://www.tbsnews.net/bangladesh/rss.xml",
+   "ok": true,
+   "items": 20,
+   "newest": "2026-10-31T16:15:00+00:00",
+   "error": null
+  },
+  {
+   "source": "The Business Standard",
+   "url": "https://www.tbsnews.net/economy/rss.xml",
+   "ok": true,
+   "items": 20,
+   "newest": "2026-10-31T15:50:00+00:00",
+   "error": null
+  },
+  {
+   "source": "Bonik Barta (বণিক বার্তা)",
+   "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
+   "ok": true,
+   "items": 30,
+   "newest": "2026-10-31T16:53:30+00:00",
+   "error": null
+  }
+ ]
+}
