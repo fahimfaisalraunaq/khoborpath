@@ -1,0 +1,6 @@
+{
+  "name": "Khoborpath - BCS & Govt Job News Prep",
+  "description": "Read the news. Ace the exam. Transform daily newspaper editorials and affairs into organized BCS & government job study material.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

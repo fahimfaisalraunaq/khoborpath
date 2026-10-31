@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Khoborpath logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00875F"/><stop offset="1" stop-color="#005A42"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <circle cx="256" cy="178" r="78" fill="#F42A41"/>
+  <path d="M256 226 C208 196 148 190 96 204 L96 392 C148 378 208 384 256 414 Z" fill="#FFFFFF"/>
+  <path d="M256 226 C304 196 364 190 416 204 L416 392 C364 378 304 384 256 414 Z" fill="#EAF4F0"/>
+  <g stroke="#006A4E" stroke-linecap="round">
+    <path d="M128 246 C164 240 198 244 228 256" stroke-width="12"/>
+    <path d="M128 282 C164 276 198 280 228 292" stroke-width="8" opacity=".45"/>
+    <path d="M128 314 C164 308 198 312 228 324" stroke-width="8" opacity=".45"/>
+    <path d="M128 346 C164 340 198 344 228 356" stroke-width="8" opacity=".45"/>
+  </g>
+  <path d="M300 300 L334 334 L392 262" fill="none" stroke="#006A4E" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

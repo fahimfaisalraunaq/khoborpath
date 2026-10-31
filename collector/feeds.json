@@ -1,0 +1,45 @@
+[
+ {
+  "source": "The Daily Star",
+  "url": "https://www.thedailystar.net/opinion/editorial/rss.xml",
+  "editorial": true
+ },
+ {
+  "source": "The Daily Star",
+  "url": "https://www.thedailystar.net/news/bangladesh/rss.xml",
+  "editorial": false
+ },
+ {
+  "source": "The Daily Star",
+  "url": "https://www.thedailystar.net/business/rss.xml",
+  "editorial": false
+ },
+ {
+  "source": "Prothom Alo English",
+  "url": "https://en.prothomalo.com/feed/",
+  "editorial": false
+ },
+ {
+  "source": "Dhaka Tribune",
+  "url": "https://www.dhakatribune.com/feed/",
+  "editorial": false
+ },
+ {
+  "source": "The Business Standard",
+  "url": "https://www.tbsnews.net/bangladesh/rss.xml",
+  "editorial": false
+ },
+ {
+  "source": "The Business Standard",
+  "url": "https://www.tbsnews.net/economy/rss.xml",
+  "editorial": false
+ },
+ {
+  "source": "Bonik Barta (বণিক বার্তা)",
+  "type": "sitemap",
+  "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
+  "site": "https://bonikbarta.com",
+  "editorial": false,
+  "max_items": 30
+ }
+]

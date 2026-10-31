@@ -1,0 +1,3 @@
+[{"source":"The Daily Star","url":"collector/fixtures/dailystar_editorial.xml","site":"https://www.thedailystar.net","editorial":true},
+ {"source":"Dhaka Tribune","url":"collector/fixtures/dhakatribune.xml","site":"https://www.dhakatribune.com","editorial":false},
+ {"source":"Broken","url":"https://localhost:9/none.xml","editorial":false}]
