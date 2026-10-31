@@ -1,0 +1,9 @@
+{
+  // Lets Cloudflare's newer "Workers" Git setup serve the built app as a static site
+  "name": "khoborpath",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
