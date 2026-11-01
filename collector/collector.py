@@ -335,11 +335,8 @@ def ai_enrich(title: str, text: str) -> dict:
                 _MODEL_CACHE["dead"] = True
                 return {}
             if r.status_code == 429:
-                if attempt == 2:
-                    print("  AI quota used up for now; skipping AI for the rest of this run", file=sys.stderr)
-                    _MODEL_CACHE["dead"] = True
-                    return {}
-                time.sleep(10 * (attempt + 1))
+                next_model("free quota used up")  # each model has its own free quota
+                time.sleep(5)
                 continue
             r.raise_for_status()
             out = json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"])
