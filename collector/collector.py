@@ -191,7 +191,7 @@ def fetch_feed(url: str):
 # ---------- full text + summaries ----------
 
 def get_html(url: str) -> str:
-    r = requests.get(url, headers={"User-Agent": UA}, timeout=25)
+    r = requests.get(url, headers={"User-Agent": UA}, timeout=15)
     return r.content.decode("utf-8", "replace")  # never trust the server's charset guess (broke Bangla text)
 
 
@@ -302,6 +302,8 @@ def ai_enrich(title: str, text: str) -> dict:
     )
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     for attempt in range(3):
+        if _MODEL_CACHE["dead"]:
+            return {}
         try:
             r = requests.post(
                 url,
@@ -317,7 +319,11 @@ def ai_enrich(title: str, text: str) -> dict:
                 _MODEL_CACHE["dead"] = True
                 return {}
             if r.status_code == 429:
-                time.sleep(15 * (attempt + 1))
+                if attempt == 2:
+                    print("  AI quota used up for now; skipping AI for the rest of this run", file=sys.stderr)
+                    _MODEL_CACHE["dead"] = True
+                    return {}
+                time.sleep(10 * (attempt + 1))
                 continue
             r.raise_for_status()
             out = json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"])
@@ -326,6 +332,8 @@ def ai_enrich(title: str, text: str) -> dict:
         except Exception as ex:
             print(f"  AI attempt {attempt + 1} failed: {ex}", file=sys.stderr)
             time.sleep(3)
+            if attempt == 2:
+                _MODEL_CACHE["dead"] = True
     return {}
 
 
@@ -451,9 +459,11 @@ def main():
                 art["_text"] = full
             time.sleep(0.3)
         src = f"{art['title']} {art['_text']}"
-        res = ai_enrich(art["title"], art["_text"]) if (ai_budget > 0 and len(art["_text"]) >= 200) else {}
+        res = {}
+        if ai_budget > 0 and len(art["_text"]) >= 200 and not _MODEL_CACHE["dead"]:
+            ai_budget -= 1  # count every attempt, so a failing AI can never stall the run
+            res = ai_enrich(art["title"], art["_text"])
         if res:
-            ai_budget -= 1
             ai_used += 1
             cats = [c for c in res.get("categories", []) if c in VALID]
             if cats:
