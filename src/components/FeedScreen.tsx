@@ -157,153 +157,106 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({
         </div>
       )}
 
-      {/* Search & Filter Controls */}
-      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 p-4 shadow-xs space-y-4">
-        {/* Main Search Row */}
+      {/* Search & quick filters */}
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <label className="relative flex-1 flex items-center h-12 rounded-full bg-white dark:bg-stone-900 shadow-sm ring-1 ring-stone-200/80 dark:ring-stone-800 focus-within:ring-2 focus-within:ring-[#006A4E] dark:focus-within:ring-emerald-500 transition">
+            <Search className="w-[18px] h-[18px] text-stone-400 ml-4 shrink-0" />
             <input
-              type="text"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
               value={filters.searchQuery}
               onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
-              placeholder={t.feed.searchPlaceholder}
-              className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50/50 dark:bg-stone-800/50 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#006A4E] dark:focus:ring-emerald-500 transition"
+              placeholder={language === 'bn' ? 'খবর খুঁজুন…' : 'Search news…'}
+              className="flex-1 min-w-0 h-full bg-transparent px-3 text-[15px] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
               aria-label="Search articles"
             />
             {filters.searchQuery && (
               <button
                 onClick={() => setFilters({ ...filters, searchQuery: '' })}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1"
-                aria-label="Clear search query"
+                className="mr-2 p-2 rounded-full text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800"
+                aria-label="Clear search"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
-          </div>
-
+          </label>
           <button
             onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold border transition min-h-[42px] ${
-              showFiltersPanel || hasActiveFilters
-                ? 'bg-[#006A4E]/10 border-[#006A4E]/30 text-[#006A4E] dark:text-emerald-300'
-                : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100'
+            className={`relative h-12 w-12 shrink-0 grid place-items-center rounded-full shadow-sm ring-1 transition ${
+              showFiltersPanel
+                ? 'bg-[#006A4E] text-white ring-[#006A4E]'
+                : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 ring-stone-200/80 dark:ring-stone-800'
             }`}
             aria-expanded={showFiltersPanel}
-            aria-label="Toggle filter options"
+            aria-label="More filters"
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="hidden sm:inline">{t.feed.filterButton}</span>
-            {hasActiveFilters && (
-              <span className="w-2 h-2 rounded-full bg-[#006A4E] dark:bg-emerald-400" />
+            <SlidersHorizontal className="w-[18px] h-[18px]" />
+            {(filters.selectedCategories.length > 0 || filters.highRelevanceOnly) && (
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#F42A41]" />
             )}
           </button>
         </div>
 
-        {/* Quick Toggles: Editorials only & High relevance only */}
-        <div className="flex items-center gap-2 flex-wrap text-xs">
+        {/* One scrollable row of chips: date, editorials, newspapers */}
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {(['today', '7days', 'all'] as DateRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => setFilters({ ...filters, dateRange: range })}
+              className={`chip ${filters.dateRange === range ? 'chip-on' : ''}`}
+            >
+              {t.feed.dateRanges[range]}
+            </button>
+          ))}
+          <span className="w-px shrink-0 bg-stone-200 dark:bg-stone-800 my-1" />
           <button
             onClick={() => setFilters({ ...filters, editorialsOnly: !filters.editorialsOnly })}
-            className={`px-3 py-1.5 rounded-xl font-medium border transition ${
-              filters.editorialsOnly
-                ? 'bg-[#006A4E] text-white border-[#006A4E]'
-                : 'bg-stone-50 dark:bg-stone-800/80 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:border-stone-300'
-            }`}
+            className={`chip ${filters.editorialsOnly ? 'chip-on' : ''}`}
           >
             {t.feed.editorialsOnly}
           </button>
-
-          <button
-            onClick={() => setFilters({ ...filters, highRelevanceOnly: !filters.highRelevanceOnly })}
-            className={`px-3 py-1.5 rounded-xl font-medium border transition ${
-              filters.highRelevanceOnly
-                ? 'bg-[#F42A41] text-white border-[#F42A41]'
-                : 'bg-stone-50 dark:bg-stone-800/80 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:border-stone-300'
-            }`}
-          >
-            {t.feed.highRelevanceOnly}
-          </button>
-
-          {/* Date range quick selector */}
-          <div className="flex items-center gap-1 ml-auto">
-            <Clock className="w-3.5 h-3.5 text-stone-400 hidden sm:inline" />
-            {(['all', 'today', '7days', '30days'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => setFilters({ ...filters, dateRange: range })}
-                className={`px-2 py-1 rounded-lg text-xs transition ${
-                  filters.dateRange === range
-                    ? 'font-bold text-[#006A4E] dark:text-emerald-400 bg-[#006A4E]/10 dark:bg-emerald-500/20'
-                    : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
-                }`}
-              >
-                {t.feed.dateRanges[range]}
-              </button>
-            ))}
-          </div>
+          {availableSources.map((source) => (
+            <button
+              key={source}
+              onClick={() => setFilters({ ...filters, selectedSource: filters.selectedSource === source ? 'all' : source })}
+              className={`chip ${filters.selectedSource === source ? 'chip-on' : ''}`}
+            >
+              {source}
+            </button>
+          ))}
         </div>
 
-        {/* Expanded Filters Drawer */}
         {showFiltersPanel && (
-          <div className="pt-4 border-t border-stone-100 dark:border-stone-800/80 space-y-4">
-            {/* Category Multi-select Pills */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-stone-900 ring-1 ring-stone-200/80 dark:ring-stone-800 space-y-4">
             <div>
-              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-2">
-                {t.feed.categoriesLabel}
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {ALL_CATEGORIES.map((cat) => {
-                  const isSelected = filters.selectedCategories.includes(cat);
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => toggleCategory(cat)}
-                      className={`px-2.5 py-1 rounded-lg text-xs transition font-medium border ${
-                        isSelected
-                          ? 'bg-[#006A4E] text-white border-[#006A4E]'
-                          : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-transparent hover:border-stone-300 dark:hover:border-stone-700'
-                      }`}
-                    >
-                      {language === 'bn' ? CATEGORY_NAMES_BN[cat] || cat : cat}
-                    </button>
-                  );
-                })}
+              <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2">{t.feed.categoriesLabel}</p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={`chip ${filters.selectedCategories.includes(cat) ? 'chip-on' : ''}`}
+                  >
+                    {language === 'bn' ? CATEGORY_NAMES_BN[cat] || cat : cat}
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Source Dropdown */}
-            {availableSources.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                  {t.feed.sourcesLabel}:
-                </label>
-                <select
-                  value={filters.selectedSource}
-                  onChange={(e) => setFilters({ ...filters, selectedSource: e.target.value })}
-                  className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#006A4E]"
-                >
-                  <option value="all">{t.feed.allSources}</option>
-                  {availableSources.map((source) => (
-                    <option key={source} value={source}>
-                      {source}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Clear Filters Button */}
-            {hasActiveFilters && (
-              <div className="flex justify-end pt-1">
-                <button
-                  onClick={handleClearFilters}
-                  className="flex items-center gap-1 text-xs font-semibold text-[#F42A41] hover:underline"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>{t.feed.clearFilters}</span>
+            <div className="flex items-center justify-between gap-3">
+              <button
+                onClick={() => setFilters({ ...filters, highRelevanceOnly: !filters.highRelevanceOnly })}
+                className={`chip ${filters.highRelevanceOnly ? 'chip-on' : ''}`}
+              >
+                {t.feed.highRelevanceOnly}
+              </button>
+              {hasActiveFilters && (
+                <button onClick={handleClearFilters} className="text-xs font-semibold text-[#F42A41]">
+                  {t.feed.clearFilters}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
