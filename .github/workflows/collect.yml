@@ -19,7 +19,8 @@ jobs:
           cache: pip
           cache-dependency-path: collector/requirements.txt
       - run: pip install -r collector/requirements.txt
-      - run: python collector/collector.py
+      - run: python -u collector/collector.py
+        timeout-minutes: 25
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - name: Commit updated articles
