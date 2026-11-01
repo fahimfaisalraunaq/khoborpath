@@ -1,7 +1,7 @@
 {
- "run_at": "2026-10-31T21:28:47.559760+00:00",
- "added": 63,
- "total": 272,
+ "run_at": "2026-11-01T01:04:21.782104+00:00",
+ "added": 11,
+ "total": 283,
  "ai_claims_rejected": 0,
  "feeds": [
   {
@@ -65,7 +65,7 @@
    "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
    "ok": true,
    "items": 30,
-   "newest": "2026-10-31T21:26:37+00:00",
+   "newest": "2026-10-31T21:37:49+00:00",
    "error": null
   }
  ]
