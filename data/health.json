@@ -1,7 +1,7 @@
 {
- "run_at": "2026-11-01T07:28:12.193886+00:00",
- "added": 55,
- "total": 338,
+ "run_at": "2026-11-01T15:01:48.298991+00:00",
+ "added": 132,
+ "total": 470,
  "ai_claims_rejected": 0,
  "feeds": [
   {
@@ -9,7 +9,7 @@
    "url": "https://www.thedailystar.net/opinion/editorial/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-11-01T05:00:00+00:00",
+   "newest": "2026-11-01T12:43:02+00:00",
    "error": null
   },
   {
@@ -17,7 +17,7 @@
    "url": "https://www.thedailystar.net/news/bangladesh/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-10-31T18:00:00+00:00",
+   "newest": "2026-11-01T10:38:33+00:00",
    "error": null
   },
   {
@@ -25,15 +25,15 @@
    "url": "https://www.thedailystar.net/business/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-11-01T07:09:34+00:00",
+   "newest": "2026-11-01T14:45:07+00:00",
    "error": null
   },
   {
    "source": "Prothom Alo English",
    "url": "https://en.prothomalo.com/feed/",
    "ok": true,
-   "items": 10,
-   "newest": "2026-11-01T06:26:48+00:00",
+   "items": 12,
+   "newest": "2026-11-01T14:32:57+00:00",
    "error": null
   },
   {
@@ -41,7 +41,7 @@
    "url": "https://www.dhakatribune.com/feed/",
    "ok": true,
    "items": 100,
-   "newest": "2026-11-01T07:16:00+00:00",
+   "newest": "2026-11-01T14:58:25+00:00",
    "error": null
   },
   {
@@ -49,7 +49,7 @@
    "url": "https://www.tbsnews.net/bangladesh/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-01T07:05:00+00:00",
+   "newest": "2026-11-01T14:15:00+00:00",
    "error": null
   },
   {
@@ -57,7 +57,7 @@
    "url": "https://www.tbsnews.net/economy/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-01T01:30:00+00:00",
+   "newest": "2026-11-01T14:20:00+00:00",
    "error": null
   },
   {
@@ -65,7 +65,7 @@
    "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
    "ok": true,
    "items": 30,
-   "newest": "2026-11-01T07:25:49+00:00",
+   "newest": "2026-11-01T14:52:47+00:00",
    "error": null
   }
  ]
