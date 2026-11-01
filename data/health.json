@@ -1,9 +1,9 @@
 {
- "run_at": "2026-11-01T19:41:50.611881+00:00",
- "added": 19,
- "total": 311,
- "ai_claims_rejected": 9,
- "ai_summaries": 20,
+ "run_at": "2026-11-01T23:36:06.984387+00:00",
+ "added": 36,
+ "total": 347,
+ "ai_claims_rejected": 5,
+ "ai_summaries": 18,
  "ai_model": "gemini-3.5-flash-lite",
  "feeds": [
   {
@@ -34,8 +34,8 @@
    "source": "Prothom Alo (প্রথম আলো)",
    "url": "https://www.prothomalo.com/feed/",
    "ok": true,
-   "items": 57,
-   "newest": "2026-11-01T19:20:40+00:00",
+   "items": 4,
+   "newest": "2026-11-01T22:30:00+00:00",
    "error": null
   },
   {
@@ -43,7 +43,7 @@
    "url": "https://www.tbsnews.net/bangladesh/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-01T19:15:00+00:00",
+   "newest": "2026-11-01T19:55:00+00:00",
    "error": null
   },
   {
@@ -59,7 +59,7 @@
    "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
    "ok": true,
    "items": 30,
-   "newest": "2026-11-01T19:32:45+00:00",
+   "newest": "2026-11-01T20:51:52+00:00",
    "error": null
   }
  ]
