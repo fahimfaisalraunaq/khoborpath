@@ -219,6 +219,8 @@ def article_text(url: str) -> str:
         t = clean_html(m.group(1))
         if "প্রকাশ:" in t[:120] or "প্রকাশিত:" in t[:120]:
             continue  # byline/date line
+        if re.search(r"@|ই-মেইল|ইমেইল|ফোন:|ফ্যাক্স|পিএবিএক্স|সম্পাদক ও প্রকাশক|©", t):
+            continue  # newspaper footer / contact block
         if len(t) >= 60 and not re.search(r"(?i)copyright|all rights reserved|subscribe|follow us|cookie|advertis|\u0995\u09aa\u09bf\u09b0\u09be\u0987\u099f", t):
             if t not in paras:
                 paras.append(t)
@@ -251,7 +253,16 @@ def extractive(text: str, title: str) -> tuple[str, list[str]]:
     return summary, points[:5]
 
 
-_MODEL_CACHE = {"name": None, "dead": False}
+_MODEL_CACHE = {"name": None, "dead": False, "candidates": []}
+
+
+def next_model(reason: str) -> None:
+    print(f"  AI model {_MODEL_CACHE['name']} unusable ({reason})", file=sys.stderr)
+    if _MODEL_CACHE["candidates"] and not MODEL:
+        _MODEL_CACHE["name"] = _MODEL_CACHE["candidates"].pop(0)
+        print(f"  switching to {_MODEL_CACHE['name']}", file=sys.stderr)
+    else:
+        _MODEL_CACHE["dead"] = True
 
 
 def pick_model() -> str | None:
@@ -271,6 +282,7 @@ def pick_model() -> str | None:
             m = re.search(r"(\d+(?:\.\d+)?)", n)
             return (float(m.group(1)) if m else 0, "latest" in n)
         flash.sort(key=ver, reverse=True)
+        _MODEL_CACHE["candidates"] = flash[1:4]  # fallbacks if the newest one is slow or unavailable
         _MODEL_CACHE["name"] = flash[0] if flash else None
         print(f"AI model: {_MODEL_CACHE['name']}")
     except Exception as ex:
@@ -300,10 +312,10 @@ def ai_enrich(title: str, text: str) -> dict:
         + ('Write summary, key_facts and exam_angle in Bangla. ' if bangla else 'Write in clear simple English. ')
         + f"\n\nTitle: {title}\nText: {text[:5000]}"
     )
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     for attempt in range(3):
         if _MODEL_CACHE["dead"]:
             return {}
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{_MODEL_CACHE['name'] or model}:generateContent"
         try:
             r = requests.post(
                 url,
@@ -312,10 +324,13 @@ def ai_enrich(title: str, text: str) -> dict:
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1},
                 },
-                timeout=40,
+                timeout=90,
             )
-            if r.status_code in (400, 403, 404):
-                print(f"  AI disabled for this run: HTTP {r.status_code} {r.text[:200]}", file=sys.stderr)
+            if r.status_code in (400, 404):
+                next_model(f"HTTP {r.status_code} {r.text[:150]}")
+                continue
+            if r.status_code == 403:
+                print(f"  AI disabled: HTTP 403 (check GEMINI_API_KEY) {r.text[:150]}", file=sys.stderr)
                 _MODEL_CACHE["dead"] = True
                 return {}
             if r.status_code == 429:
@@ -329,6 +344,8 @@ def ai_enrich(title: str, text: str) -> dict:
             out = json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"])
             time.sleep(4.5)  # stay under free-tier requests/minute
             return out if isinstance(out, dict) else {}
+        except requests.exceptions.Timeout:
+            next_model("timed out")
         except Exception as ex:
             print(f"  AI attempt {attempt + 1} failed: {ex}", file=sys.stderr)
             time.sleep(3)
