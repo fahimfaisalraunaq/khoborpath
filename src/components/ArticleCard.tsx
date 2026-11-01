@@ -134,6 +134,16 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <p className="text-sm text-stone-600 dark:text-stone-300 line-clamp-3 leading-relaxed mb-4">
           {summaryText}
         </p>
+        {article.key_facts && article.key_facts.length > 0 && (
+          <ul className="mb-4 space-y-1.5">
+            {article.key_facts.slice(0, 2).map((f, i) => (
+              <li key={i} className="flex gap-2 text-[13px] leading-5 text-stone-700 dark:text-stone-300">
+                <span className="mt-2 w-1.5 h-1.5 rounded-full bg-[#006A4E] dark:bg-emerald-400 shrink-0" />
+                <span className="line-clamp-2">{f}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Footer: Badges & Tags */}
