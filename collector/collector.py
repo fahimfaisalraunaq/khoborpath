@@ -30,9 +30,10 @@ DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "data"))
 DATA_FILE = DATA_DIR / "articles.json"
 HEALTH_FILE = DATA_DIR / "health.json"
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")  # verify current free-tier model name in AI Studio
+MODEL = os.getenv("GEMINI_MODEL", "")  # empty = pick the newest available Flash model automatically
 API_KEY = os.getenv("GEMINI_API_KEY")
-MAX_AI_CALLS_PER_RUN = 10   # per run; runs hourly, so ~240/day max, within the free tier
+MAX_AI_CALLS_PER_RUN = 20   # per run, within the Gemini free tier
+MAX_PAGE_FETCHES_PER_RUN = 120  # full-text reads for summaries (no AI needed)
 KEEP_DAYS = 90
 MAX_ARTICLES = 1500
 UA = ("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -137,7 +138,7 @@ def fetch_sitemap_source(f):
         url = f["url"].replace("{date}", d.strftime("%Y-%m-%d"))
         try:
             r = requests.get(url, headers={"User-Agent": UA}, timeout=25)
-            for m in re.finditer(r"<loc>([^<]+)</loc>\s*<lastmod>([^<]+)</lastmod>", r.text):
+            for m in re.finditer(r"<loc>([^<]+)</loc>\s*<lastmod>([^<]+)</lastmod>", r.content.decode("utf-8", "replace")):
                 locs.append((m.group(1).strip(), m.group(2).strip()))
         except Exception as ex:
             print(f"  sitemap error {url}: {ex}", file=sys.stderr)
@@ -146,7 +147,7 @@ def fetch_sitemap_source(f):
     entries = []
     for loc, lastmod in locs[: f.get("max_items", 30)]:
         try:
-            page = requests.get(loc, headers={"User-Agent": UA}, timeout=25).text
+            page = get_html(loc)
         except Exception:
             continue
         title = meta(page, "og:title")
@@ -187,22 +188,119 @@ def fetch_feed(url: str):
     return None, last_err
 
 
+# ---------- full text + summaries ----------
+
+def get_html(url: str) -> str:
+    r = requests.get(url, headers={"User-Agent": UA}, timeout=25)
+    return r.content.decode("utf-8", "replace")  # never trust the server's charset guess (broke Bangla text)
+
+
+def fix_mojibake(s):
+    """Repair Bangla text that an earlier version decoded as Latin-1 (looks like 'à¦¬à¦¾')."""
+    if isinstance(s, str) and "à¦" in s or isinstance(s, str) and "à§" in s:
+        try:
+            return s.encode("latin-1").decode("utf-8")
+        except Exception:
+            return s
+    if isinstance(s, list):
+        return [fix_mojibake(x) for x in s]
+    return s
+
+
+def article_text(url: str) -> str:
+    """Readable body text of an article page: its paragraphs, minus menus/ads/boilerplate."""
+    try:
+        page = get_html(url)
+    except Exception:
+        return ""
+    page = re.sub(r"(?is)<(script|style|noscript|header|footer|nav|aside|figure|form)[^>]*>.*?</\1>", " ", page)
+    paras = []
+    for m in re.finditer(r"(?is)<p[^>]*>(.*?)</p>", page):
+        t = clean_html(m.group(1))
+        if "প্রকাশ:" in t[:120] or "প্রকাশিত:" in t[:120]:
+            continue  # byline/date line
+        if len(t) >= 60 and not re.search(r"(?i)copyright|all rights reserved|subscribe|follow us|cookie|advertis|\u0995\u09aa\u09bf\u09b0\u09be\u0987\u099f", t):
+            if t not in paras:
+                paras.append(t)
+    text = " ".join(paras)
+    if len(text) < 200:  # JS-rendered page: fall back to the paper's own description
+        descs = re.findall(r'<meta[^>]+?(?:name|property)="(?:og:)?description"[^>]*?content="([^"]*)"', page)
+        text = max([html.unescape(d) for d in descs] + [text], key=len)
+    return text[:6000]
+
+
+SENT_SPLIT = re.compile(r"(?<=[.!?\u0964])\s+")
+HAS_NUM = re.compile(r"[0-9\u09e6-\u09ef]")
+
+
+def extractive(text: str, title: str) -> tuple[str, list[str]]:
+    """No-AI fallback built only from the article's own sentences:
+    summary = first 2-3 sentences, key points = other sentences carrying figures/dates/names."""
+    sents = [x.strip() for x in SENT_SPLIT.split(text) if 40 <= len(x.strip()) <= 320]
+    if not sents:
+        return "", []
+    summary, used = "", 0
+    for x in sents[: (2 if len(sents) <= 6 else 3)]:
+        if len(summary) + len(x) > 480 and summary:
+            break
+        summary = (summary + " " + x).strip()
+        used += 1
+    points = [x for x in sents[used:] if HAS_NUM.search(x)][:4]
+    if len(points) < 3:
+        points += [x for x in sents[used:] if x not in points][: 3 - len(points)]
+    return summary, points[:5]
+
+
+_MODEL_CACHE = {"name": None, "dead": False}
+
+
+def pick_model() -> str | None:
+    if MODEL:
+        return MODEL
+    if _MODEL_CACHE["name"]:
+        return _MODEL_CACHE["name"]
+    try:
+        r = requests.get("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+                         headers={"x-goog-api-key": API_KEY}, timeout=30)
+        r.raise_for_status()
+        names = [m["name"].split("/")[-1] for m in r.json().get("models", [])
+                 if "generateContent" in m.get("supportedGenerationMethods", [])]
+        flash = [n for n in names if "flash" in n and not re.search(r"image|tts|audio|live|thinking|exp|preview|lite", n)]
+        flash = flash or [n for n in names if "flash" in n and not re.search(r"image|tts|audio|live", n)]
+        def ver(n):
+            m = re.search(r"(\d+(?:\.\d+)?)", n)
+            return (float(m.group(1)) if m else 0, "latest" in n)
+        flash.sort(key=ver, reverse=True)
+        _MODEL_CACHE["name"] = flash[0] if flash else None
+        print(f"AI model: {_MODEL_CACHE['name']}")
+    except Exception as ex:
+        print(f"Could not list Gemini models: {ex}", file=sys.stderr)
+    return _MODEL_CACHE["name"]
+
+
 # ---------- AI enrichment (optional) ----------
 
 def ai_enrich(title: str, text: str) -> dict:
-    if not API_KEY:
+    if not API_KEY or _MODEL_CACHE["dead"]:
         return {}
+    model = pick_model()
+    if not model:
+        _MODEL_CACHE["dead"] = True
+        return {}
+    bangla = bool(re.search(r"[\u0980-\u09ff]", title))
     prompt = (
         "You help Bangladeshi candidates preparing for BCS and government job exams. "
         "Use ONLY the article text below. Never add outside knowledge, never guess numbers or names. "
         "Return JSON with keys: "
         f'"categories" (array, only from: {", ".join(sorted(VALID))}), '
-        '"summary" (max 2 sentences, exam-focused, only facts from the text), '
-        '"key_facts" (3-5 short items copied from the text: names, figures, dates, institutions), '
-        '"exam_relevance" ("high", "medium" or "low").\n\n'
-        f"Title: {title}\nText: {text[:3000]}"
+        '"summary" (3-4 sentences: what happened, who, why it matters), '
+        '"key_facts" (4-6 short bullet points with the most important names, figures, dates, places, institutions and decisions), '
+        '"exam_angle" (1 sentence: which BCS/job-exam topic this connects to, e.g. economy, constitution, foreign policy), '
+        '"exam_relevance" ("high", "medium" or "low"). '
+        + ('Write summary, key_facts and exam_angle in Bangla. ' if bangla else 'Write in clear simple English. ')
+        + f"\n\nTitle: {title}\nText: {text[:5000]}"
     )
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     for attempt in range(3):
         try:
             r = requests.post(
@@ -214,6 +312,10 @@ def ai_enrich(title: str, text: str) -> dict:
                 },
                 timeout=40,
             )
+            if r.status_code in (400, 403, 404):
+                print(f"  AI disabled for this run: HTTP {r.status_code} {r.text[:200]}", file=sys.stderr)
+                _MODEL_CACHE["dead"] = True
+                return {}
             if r.status_code == 429:
                 time.sleep(15 * (attempt + 1))
                 continue
@@ -252,6 +354,9 @@ def collect(feeds, existing, cutoff_dt):
             published = to_iso(e)
             if not published or published < cutoff_dt.isoformat():
                 continue  # stale or undated
+            now_iso = datetime.now(timezone.utc).isoformat()
+            if published > now_iso:
+                published = now_iso  # e.g. Daily Star dates next-day print articles at midnight
             newest = max(newest or published, published)
             kept += 1
             aid = hashlib.md5(link.encode()).hexdigest()[:16]
@@ -260,7 +365,7 @@ def collect(feeds, existing, cutoff_dt):
             text = entry_text(e)
             path = urlparse(link).path.lower()
             tags_text = " ".join(t.get("term", "") for t in e.get("tags") or [])
-            is_ed = bool(f.get("editorial")) or "/editorial" in path or "editorial" in tags_text.lower()
+            is_ed = bool(f.get("editorial")) or "/editorial" in path or "editorial" in tags_text.lower() or "সম্পাদকীয়" in tags_text
             is_op = is_ed or "/opinion" in path or "/op-ed" in path
             item = {
                 "id": aid,
@@ -314,41 +419,77 @@ def main():
     cutoff = datetime.now(timezone.utc) - timedelta(days=KEEP_DAYS)
     new_items, health = collect(feeds, existing, cutoff)
 
-    # Spend the limited AI quota on editorials first, then newest items
-    new_items.sort(key=lambda a: a["published"], reverse=True)
-    new_items.sort(key=lambda a: not a["is_editorial"])
-    ai_budget, ai_dropped = MAX_AI_CALLS_PER_RUN, 0
-    for art in new_items:
-        if ai_budget <= 0 or not API_KEY:
-            break
-        if len(art["_text"]) < 120:
-            continue  # too little original text to ground any facts
-        ai_budget -= 1
+    for aid, a in list(existing.items()):  # repair older garbled Bangla text
+        for k in ("title", "summary", "ai_summary", "key_facts", "source"):
+            if k in a:
+                a[k] = fix_mojibake(a[k])
+        if any(("à¦" in str(a.get(k, "")) or "à§" in str(a.get(k, ""))) for k in ("title", "summary", "key_facts")):
+            del existing[aid]  # can't be repaired: drop it so it is collected again cleanly
+
+    # Drop papers that were removed from feeds.json
+    sources = {f["source"] for f in feeds}
+    existing = {k: v for k, v in existing.items() if v.get("source") in sources}
+
+    # Work list: new articles + recent ones still missing a proper summary (from earlier runs)
+    recent_cut = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
+    backlog = [a for a in existing.values() if not a.get("ai_summary") and a.get("published", "") >= recent_cut]
+    backlog.sort(key=lambda a: a["published"], reverse=True)
+    backlog = backlog[:80]
+    for a in backlog:
+        a["_text"] = a.get("summary", "")
+    work = new_items + backlog
+    # editorials first, then newest
+    work.sort(key=lambda a: a["published"], reverse=True)
+    work.sort(key=lambda a: not a["is_editorial"])
+
+    page_budget, ai_budget, ai_dropped, ai_used = MAX_PAGE_FETCHES_PER_RUN, MAX_AI_CALLS_PER_RUN, 0, 0
+    for art in work:
+        if page_budget > 0 and not (art in backlog and art.get("key_facts")):
+            page_budget -= 1
+            full = article_text(art["link"])
+            if len(full) > len(art["_text"]):
+                art["_text"] = full
+            time.sleep(0.3)
         src = f"{art['title']} {art['_text']}"
-        res = ai_enrich(art["title"], art["_text"])
-        if not res:
-            continue
-        cats = [c for c in res.get("categories", []) if c in VALID]
-        if cats:
-            art["categories"] = cats
-        s = res.get("summary")
-        if isinstance(s, str) and s.strip():
-            if grounded(s, src):
-                art["ai_summary"] = s.strip()
-            else:
-                ai_dropped += 1
-        facts = []
-        for x in res.get("key_facts", []):
-            if isinstance(x, str) and x.strip():
-                if grounded(x, src):
-                    facts.append(x.strip())
+        res = ai_enrich(art["title"], art["_text"]) if (ai_budget > 0 and len(art["_text"]) >= 200) else {}
+        if res:
+            ai_budget -= 1
+            ai_used += 1
+            cats = [c for c in res.get("categories", []) if c in VALID]
+            if cats:
+                art["categories"] = cats
+            sm = res.get("summary")
+            if isinstance(sm, str) and sm.strip():
+                if grounded(sm, src):
+                    art["ai_summary"] = sm.strip()
                 else:
                     ai_dropped += 1
-        if facts:
-            art["key_facts"] = facts[:6]
-        if res.get("exam_relevance") in ("high", "medium", "low"):
-            art["exam_relevance"] = res["exam_relevance"]
+            facts = []
+            for x in res.get("key_facts", []):
+                if isinstance(x, str) and x.strip():
+                    if grounded(x, src):
+                        facts.append(x.strip())
+                    else:
+                        ai_dropped += 1
+            if facts:
+                art["key_facts"] = facts[:6]
+            ea = res.get("exam_angle")
+            if isinstance(ea, str) and ea.strip() and grounded(ea, src):
+                art["exam_angle"] = ea.strip()
+            if res.get("exam_relevance") in ("high", "medium", "low"):
+                art["exam_relevance"] = res["exam_relevance"]
+        # No AI (or AI facts rejected)? Use the article's own sentences.
+        ex_sum, ex_pts = extractive(art["_text"], art["title"])
+        if ex_sum and len(ex_sum) > len(art.get("summary", "")):
+            art["summary"] = ex_sum
+        if not art.get("key_facts") and ex_pts:
+            art["key_facts"] = ex_pts
+            art["facts_source"] = "article"  # quoted from the article, not AI
+        if not art.get("ai_summary") and not art.get("is_editorial") and art.get("exam_relevance") == "medium" and not art.get("key_facts"):
+            art["exam_relevance"] = "low"
 
+    for art in backlog:
+        art.pop("_text", None)
     for art in new_items:
         art.pop("_text", None)
         existing[art["id"]] = art
@@ -360,7 +501,7 @@ def main():
     HEALTH_FILE.write_text(json.dumps({
         "run_at": datetime.now(timezone.utc).isoformat(),
         "added": len(new_items), "total": len(kept),
-        "ai_claims_rejected": ai_dropped, "feeds": health,
+        "ai_claims_rejected": ai_dropped, "ai_summaries": ai_used, "ai_model": _MODEL_CACHE["name"], "feeds": health,
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"Added {len(new_items)} new; total {len(kept)}; AI claims rejected as ungrounded: {ai_dropped}")
     if not any(h["ok"] for h in health):
