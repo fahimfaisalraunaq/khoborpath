@@ -13,7 +13,6 @@ import { FeedScreen } from './components/FeedScreen';
 import { ArticleDetailScreen } from './components/ArticleDetailScreen';
 import { DailyDigestScreen } from './components/DailyDigestScreen';
 import { SavedScreen } from './components/SavedScreen';
-import { QuizScreen } from './components/QuizScreen';
 import { ProgressScreen } from './components/ProgressScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 
@@ -60,13 +59,6 @@ export default function App() {
     setSelectedArticle(article);
     setPreviousTab(currentTab === 'detail' ? 'feed' : currentTab);
     setCurrentTab('detail');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Launch Quiz from Article Detail or Standalone
-  const handleQuizMe = (article: Article) => {
-    setSelectedArticle(article);
-    setCurrentTab('quiz');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -150,12 +142,10 @@ export default function App() {
               onToggleBookmark={() => toggleBookmark(selectedArticle.id)}
               isRead={isRead(selectedArticle.id)}
               onToggleRead={() => toggleRead(selectedArticle.id)}
-              onQuizMe={handleQuizMe}
               savedNote={getNote(selectedArticle.id)}
               onSaveNote={(text) => saveNote(selectedArticle.id, text)}
               isFactChecked={(fact) => isFactChecked(selectedArticle.id, fact)}
               onToggleFactCheck={(fact) => toggleFactCheck(selectedArticle.id, fact)}
-              bestScore={quizScores[selectedArticle.id]}
             />
           )}
 
@@ -176,25 +166,6 @@ export default function App() {
               onSelectArticle={handleSelectArticle}
               onRemoveBookmark={handleRemoveBookmark}
               onNavigateFeed={() => setCurrentTab('feed')}
-            />
-          )}
-
-          {currentTab === 'quiz' && (
-            <QuizScreen
-              article={selectedArticle}
-              articles={articles}
-              language={language}
-              onSelectArticle={(art) => {
-                setSelectedArticle(art);
-              }}
-              onBackToArticle={() => {
-                if (selectedArticle) {
-                  setCurrentTab('detail');
-                } else {
-                  setCurrentTab('feed');
-                }
-              }}
-              onSaveQuizScore={saveQuizScore}
             />
           )}
 
