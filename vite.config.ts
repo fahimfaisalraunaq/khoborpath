@@ -55,8 +55,9 @@ export default defineConfig(() => {
       }),
     ],
     build: {
-      // Broad phone support: Chrome/Samsung Internet 111+, iOS Safari 16.4+ (Tailwind v4 minimum)
-      target: ['chrome111', 'safari16.4', 'firefox128', 'edge111'],
+      // Broad phone support incl. old iPhones (iPhone 7 / iOS 15): code and CSS are down-compiled
+      target: ['chrome87', 'safari14', 'firefox78', 'edge88'],
+      cssTarget: ['chrome87', 'safari14', 'firefox78', 'edge88'],
     },
     resolve: {
       alias: {
