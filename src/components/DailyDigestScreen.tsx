@@ -1,21 +1,15 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * Daily Digest: a short, ranked brief so nobody has to read every article.
+ * 1) Top stories (max 10) with summary + key points inline
+ * 2) Browse the rest by topic (titles + one line)
+ * 3) Editorials
  */
 
-import React, { useState, useMemo } from 'react';
-import {
-  Sparkles,
-  Copy,
-  Check,
-  ChevronRight,
-  BookOpen,
-  Calendar,
-  Layers,
-} from 'lucide-react';
-import { Article, Category, Language } from '../types';
-import { CATEGORY_NAMES_BN, TRANSLATIONS } from '../lib/translations';
-import { isDateInRange, formatReadableDate } from '../lib/dateUtils';
+import React, { useMemo, useState } from 'react';
+import { Check, ChevronRight, Copy, ExternalLink, Feather, Clock } from 'lucide-react';
+import { Article, Language } from '../types';
+import { ALL_CATEGORIES } from '../config';
+import { CATEGORY_NAMES_BN } from '../lib/translations';
 
 interface DailyDigestScreenProps {
   articles: Article[];
@@ -23,216 +17,232 @@ interface DailyDigestScreenProps {
   onSelectArticle: (article: Article) => void;
 }
 
-export const DailyDigestScreen: React.FC<DailyDigestScreenProps> = ({
-  articles,
-  language,
-  onSelectArticle,
-}) => {
-  const t = TRANSLATIONS[language];
-  const [copied, setCopied] = useState<boolean>(false);
+type Day = 'today' | 'yesterday' | 'week';
 
-  // Filter for high and medium relevance articles.
-  // First check today's articles; if today has fewer than 3, fall back to recent high/medium articles
-  const digestArticles = useMemo(() => {
-    const todayList = articles.filter(
-      (a) =>
-        (a.exam_relevance === 'high' || a.exam_relevance === 'medium') &&
-        isDateInRange(a.published, 'today')
-    );
+const dhakaDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
 
-    if (todayList.length >= 3) {
-      return todayList;
-    }
+function inDay(iso: string, day: Day): boolean {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
+  if (day === 'today') return dhakaDay(d) === dhakaDay(now);
+  if (day === 'yesterday') return dhakaDay(d) === dhakaDay(new Date(now.getTime() - 864e5));
+  return now.getTime() - d.getTime() <= 7 * 864e5;
+}
 
-    // Include recent 7-day high/medium articles if today's count is small
-    const recentList = articles.filter(
-      (a) =>
-        (a.exam_relevance === 'high' || a.exam_relevance === 'medium') &&
-        isDateInRange(a.published, '7days')
-    );
+function score(a: Article): number {
+  let s = 0;
+  if (a.exam_relevance === 'high') s += 6;
+  else if (a.exam_relevance === 'medium') s += 3;
+  if (a.is_editorial) s += 3;
+  if (a.ai_summary) s += 2;
+  if (a.key_facts && a.key_facts.length >= 3) s += 2;
+  if (a.categories.some((c) => c !== 'General')) s += 1;
+  const ageH = (Date.now() - new Date(a.published).getTime()) / 36e5;
+  s += Math.max(0, 2 - ageH / 12); // small freshness bonus
+  return s;
+}
 
-    return recentList.length > 0
-      ? recentList
-      : articles.filter((a) => a.exam_relevance === 'high' || a.exam_relevance === 'medium');
-  }, [articles]);
+// Same story from several papers -> keep one
+const storyKey = (t: string) =>
+  t.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, '').split(/\s+/).filter((w) => w.length > 3).slice(0, 5).sort().join(' ');
 
-  // Group articles by category
-  const groupedByCategory = useMemo(() => {
-    const map = new Map<Category, Article[]>();
-    digestArticles.forEach((art) => {
-      const primaryCat = (art.categories[0] as Category) || 'Bangladesh Affairs';
-      if (!map.has(primaryCat)) {
-        map.set(primaryCat, []);
-      }
-      map.get(primaryCat)!.push(art);
-    });
-    return map;
-  }, [digestArticles]);
+export const DailyDigestScreen: React.FC<DailyDigestScreenProps> = ({ articles, language, onSelectArticle }) => {
+  const bn = language === 'bn';
+  const [day, setDay] = useState<Day>('today');
+  const [topic, setTopic] = useState<string>('all');
+  const [copied, setCopied] = useState(false);
 
-  // Formats digest as clean plain text for WhatsApp, Telegram, and Study Groups
-  const generatePlainTextDigest = (): string => {
-    const todayStr = formatReadableDate(new Date().toISOString(), language);
-    let output = `🇧🇩 ${t.appName.toUpperCase()} - ${t.digest.title.toUpperCase()}\n`;
-    output += `📅 ${todayStr}\n`;
-    output += `🎯 ${t.tagline}\n`;
-    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    groupedByCategory.forEach((arts, cat) => {
-      const catLabel = language === 'bn' ? CATEGORY_NAMES_BN[cat] || cat : cat;
-      output += `📂 [${catLabel.toUpperCase()}]\n`;
-
-      arts.forEach((a) => {
-        const relevanceMark = a.exam_relevance === 'high' ? '⭐ [High BCS Focus]' : '';
-        output += `\n• ${a.title} (${a.source}) ${relevanceMark}\n`;
-        const summary = a.ai_summary || a.summary;
-        if (summary) {
-          output += `  Summary: ${summary.slice(0, 160)}...\n`;
-        }
-        if (a.key_facts && a.key_facts.length > 0) {
-          output += `  Key Facts:\n`;
-          a.key_facts.slice(0, 2).forEach((f) => {
-            output += `   - ${f}\n`;
-          });
-        }
+  const pool = useMemo(() => {
+    let list = articles.filter((a) => inDay(a.published, day));
+    if (day === 'today' && list.length < 5) list = articles.filter((a) => inDay(a.published, 'yesterday')).concat(list);
+    const seen = new Set<string>();
+    return list
+      .slice()
+      .sort((a, b) => score(b) - score(a))
+      .filter((a) => {
+        const k = storyKey(a.title);
+        if (!k || seen.has(k)) return !k;
+        seen.add(k);
+        return true;
       });
-      output += `\n`;
-    });
+  }, [articles, day]);
 
-    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    output += `Study full editorials & take practice quizzes on Khoborpath.\n`;
-    return output;
+  const top = useMemo(() => pool.filter((a) => !a.is_editorial).slice(0, 10), [pool]);
+  const editorials = useMemo(() => pool.filter((a) => a.is_editorial).slice(0, 6), [pool]);
+  const rest = useMemo(() => {
+    const used = new Set([...top, ...editorials].map((a) => a.id));
+    return pool.filter((a) => !used.has(a.id) && (topic === 'all' || a.categories.includes(topic)));
+  }, [pool, top, editorials, topic]);
+
+  const topicCounts = useMemo(() => {
+    const used = new Set([...top, ...editorials].map((a) => a.id));
+    const m: Record<string, number> = {};
+    pool.filter((a) => !used.has(a.id)).forEach((a) => a.categories.forEach((c) => (m[c] = (m[c] || 0) + 1)));
+    return m;
+  }, [pool, top, editorials]);
+
+  const minutes = Math.max(1, Math.round((top.length * 45 + editorials.length * 30) / 60));
+  const catName = (c: string) => (bn ? CATEGORY_NAMES_BN[c] || c : c);
+
+  const copyDigest = async () => {
+    const lines: string[] = [`📰 Khoborpath — ${bn ? 'আজকের সংক্ষেপ' : 'Daily brief'} (${new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Dhaka' })})`, ''];
+    top.forEach((a, i) => {
+      lines.push(`${i + 1}. ${a.title} — ${a.source}`);
+      (a.key_facts || []).slice(0, 3).forEach((f) => lines.push(`   • ${f}`));
+      lines.push(`   ${a.link}`);
+    });
+    if (editorials.length) {
+      lines.push('', bn ? 'সম্পাদকীয়' : 'Editorials');
+      editorials.forEach((a) => lines.push(`• ${a.title} — ${a.source}  ${a.link}`));
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked */
+    }
   };
 
-  const handleCopy = async () => {
-    try {
-      const text = generatePlainTextDigest();
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch (err) {
-      console.warn('Clipboard write failed:', err);
-    }
+  const L = {
+    title: bn ? 'দৈনিক সংক্ষেপ' : 'Daily brief',
+    sub: bn ? 'সব খবর পড়ার দরকার নেই — পরীক্ষার জন্য সবচেয়ে গুরুত্বপূর্ণগুলো এখানে।' : "No need to read everything — the stories that matter most for exams.",
+    days: { today: bn ? 'আজ' : 'Today', yesterday: bn ? 'গতকাল' : 'Yesterday', week: bn ? 'এই সপ্তাহ' : 'This week' },
+    top: bn ? 'শীর্ষ খবর' : 'Top stories',
+    eds: bn ? 'সম্পাদকীয়' : 'Editorials',
+    more: bn ? 'বিষয় অনুযায়ী আরও খবর' : 'More by topic',
+    all: bn ? 'সব' : 'All',
+    empty: bn ? 'এই দিনের কোনো খবর নেই।' : 'No stories for this day yet.',
+    open: bn ? 'বিস্তারিত' : 'Details',
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-24 lg:pb-16">
-      {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-linear-to-br from-[#006A4E] to-[#004f3a] text-white shadow-md relative overflow-hidden">
-        <div className="relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 backdrop-blur-xs text-white">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>
-              {t.digest.totalArticlesCount.replace('{count}', String(digestArticles.length))}
-            </span>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20 lg:pb-12">
+      {/* Header */}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100">{L.title}</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{L.sub}</p>
           </div>
-
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
-            {t.digest.title}
-          </h1>
-
-          <p className="text-xs sm:text-sm text-emerald-100 max-w-xl leading-relaxed">
-            {t.digest.subtitle}
-          </p>
-
-          <div className="pt-2 flex items-center gap-3 flex-wrap">
-            <button
-              onClick={handleCopy}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-white text-[#006A4E] hover:bg-stone-100 transition shadow-sm"
-              aria-label={t.digest.copyDigest}
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  <span>{t.digest.copiedSuccess}</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span>{t.digest.copyDigest}</span>
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={copyDigest}
+            className="shrink-0 h-10 px-3 rounded-full ring-1 ring-stone-200 dark:ring-stone-800 bg-white dark:bg-stone-900 text-xs font-semibold flex items-center gap-1.5"
+            aria-label="Copy digest"
+          >
+            {copied ? <Check className="w-4 h-4 text-[#006A4E]" /> : <Copy className="w-4 h-4" />}
+            <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+          </button>
         </div>
-
-        {/* Decorative background circle */}
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/5 pointer-events-none" />
+        <div className="flex items-center gap-2">
+          {(['today', 'yesterday', 'week'] as Day[]).map((d) => (
+            <button key={d} onClick={() => setDay(d)} className={`chip ${day === d ? 'chip-on' : ''}`}>
+              {L.days[d]}
+            </button>
+          ))}
+          <span className="ml-auto flex items-center gap-1 text-xs text-stone-500">
+            <Clock className="w-3.5 h-3.5" />
+            {bn ? `~${minutes} মিনিট` : `~${minutes} min read`}
+          </span>
+        </div>
       </div>
 
-      {/* Grouped Articles */}
-      {digestArticles.length > 0 ? (
-        <div className="space-y-6">
-          {Array.from(groupedByCategory.entries()).map(([cat, arts]) => {
-            const catName = language === 'bn' ? CATEGORY_NAMES_BN[cat] || cat : cat;
-            return (
-              <div
-                key={cat}
-                className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 p-6 shadow-xs space-y-4"
-              >
-                {/* Category Header */}
-                <div className="flex items-center gap-2 pb-3 border-b border-stone-100 dark:border-stone-800">
-                  <div className="p-1.5 rounded-xl bg-[#006A4E]/10 text-[#006A4E] dark:text-emerald-400">
-                    <Layers className="w-4 h-4" />
+      {pool.length === 0 && <p className="text-center text-sm text-stone-500 py-12">{L.empty}</p>}
+
+      {/* Top stories */}
+      {top.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#006A4E] dark:text-emerald-400">
+            {L.top} · {top.length}
+          </h2>
+          {top.map((a, i) => (
+            <article key={a.id} className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 ring-1 ring-stone-200/80 dark:ring-stone-800">
+              <div className="flex items-start gap-3">
+                <span className="w-7 h-7 shrink-0 rounded-full bg-[#006A4E] text-white text-sm font-bold grid place-items-center">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400">
+                    {a.source}
+                    {a.categories[0] && a.categories[0] !== 'General' ? ` · ${catName(a.categories[0])}` : ''}
+                  </p>
+                  <h3 className="font-bold text-[15px] leading-snug text-stone-900 dark:text-stone-100 mt-0.5">{a.title}</h3>
+                  {(a.ai_summary || a.summary) && (
+                    <p className="text-sm leading-6 text-stone-600 dark:text-stone-300 mt-1.5 line-clamp-3">{a.ai_summary || a.summary}</p>
+                  )}
+                  {a.key_facts && a.key_facts.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {a.key_facts.slice(0, 3).map((f, j) => (
+                        <li key={j} className="flex gap-2 text-[13px] leading-5 text-stone-700 dark:text-stone-300">
+                          <span className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex items-center gap-4 mt-3 text-xs font-semibold">
+                    <button onClick={() => onSelectArticle(a)} className="flex items-center gap-0.5 text-[#006A4E] dark:text-emerald-400">
+                      {L.open} <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    <a href={a.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-stone-500">
+                      {bn ? 'মূল প্রতিবেদন' : 'Original'} <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
-                  <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100">
-                    {catName}
-                  </h2>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 font-semibold ml-auto">
-                    {arts.length}
-                  </span>
-                </div>
-
-                {/* Items */}
-                <div className="divide-y divide-stone-100 dark:divide-stone-800/80">
-                  {arts.map((article) => (
-                    <div
-                      key={article.id}
-                      onClick={() => onSelectArticle(article)}
-                      className="py-4 first:pt-1 last:pb-1 cursor-pointer group space-y-2 hover:bg-stone-50/50 dark:hover:bg-stone-800/30 -mx-3 px-3 rounded-2xl transition"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="font-bold text-[#006A4E] dark:text-emerald-400">
-                              {article.source}
-                            </span>
-                            {article.exam_relevance === 'high' && (
-                              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#F42A41]/10 text-[#F42A41]">
-                                {t.relevance.high}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 group-hover:text-[#006A4E] dark:group-hover:text-emerald-300 transition-colors">
-                            {article.title}
-                          </h3>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#006A4E] group-hover:translate-x-0.5 transition-transform shrink-0 mt-1" />
-                      </div>
-
-                      <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
-                        {article.ai_summary || article.summary}
-                      </p>
-
-                      {article.key_facts && article.key_facts.length > 0 && (
-                        <div className="pt-1 flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
-                          <span className="font-medium text-amber-600 dark:text-amber-400">• Fact:</span>
-                          <span className="truncate">{article.key_facts[0]}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-16 px-4 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 space-y-3">
-          <BookOpen className="w-10 h-10 text-stone-400 mx-auto" />
-          <h3 className="font-bold text-base text-stone-900 dark:text-stone-100">
-            {t.digest.emptyDigest}
-          </h3>
-        </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {/* Editorials */}
+      {editorials.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#006A4E] dark:text-emerald-400 flex items-center gap-1.5">
+            <Feather className="w-3.5 h-3.5" /> {L.eds}
+          </h2>
+          <div className="rounded-2xl bg-white dark:bg-stone-900 ring-1 ring-stone-200/80 dark:ring-stone-800 divide-y divide-stone-100 dark:divide-stone-800">
+            {editorials.map((a) => (
+              <button key={a.id} onClick={() => onSelectArticle(a)} className="w-full text-left p-4 flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-stone-500">{a.source}</p>
+                  <p className="font-semibold text-sm text-stone-900 dark:text-stone-100 leading-snug">{a.title}</p>
+                  {(a.ai_summary || a.summary) && (
+                    <p className="text-[13px] text-stone-500 dark:text-stone-400 line-clamp-2 mt-0.5">{a.ai_summary || a.summary}</p>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-400 mt-1 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* More by topic */}
+      {Object.keys(topicCounts).length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#006A4E] dark:text-emerald-400">{L.more}</h2>
+          <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button onClick={() => setTopic('all')} className={`chip ${topic === 'all' ? 'chip-on' : ''}`}>
+              {L.all}
+            </button>
+            {ALL_CATEGORIES.filter((c) => topicCounts[c]).map((c) => (
+              <button key={c} onClick={() => setTopic(c)} className={`chip ${topic === c ? 'chip-on' : ''}`}>
+                {catName(c)} · {topicCounts[c]}
+              </button>
+            ))}
+          </div>
+          <div className="rounded-2xl bg-white dark:bg-stone-900 ring-1 ring-stone-200/80 dark:ring-stone-800 divide-y divide-stone-100 dark:divide-stone-800">
+            {rest.slice(0, 25).map((a) => (
+              <button key={a.id} onClick={() => onSelectArticle(a)} className="w-full text-left px-4 py-3 flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-stone-900 dark:text-stone-100 line-clamp-2 leading-snug">{a.title}</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">{a.source}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-400 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );
