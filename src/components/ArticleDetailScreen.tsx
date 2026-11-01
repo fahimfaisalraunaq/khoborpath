@@ -30,12 +30,10 @@ interface ArticleDetailScreenProps {
   onToggleBookmark: () => void;
   isRead: boolean;
   onToggleRead: () => void;
-  onQuizMe: (article: Article) => void;
   savedNote: string;
   onSaveNote: (text: string) => void;
   isFactChecked: (fact: string) => boolean;
   onToggleFactCheck: (fact: string) => void;
-  bestScore?: QuizResult;
 }
 
 export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
@@ -46,12 +44,10 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
   onToggleBookmark,
   isRead,
   onToggleRead,
-  onQuizMe,
   savedNote,
   onSaveNote,
   isFactChecked,
   onToggleFactCheck,
-  bestScore,
 }) => {
   const t = TRANSLATIONS[language];
   const [noteText, setNoteText] = useState<string>(savedNote);
@@ -183,28 +179,8 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
           ))}
         </div>
 
-        {/* Best Score Banner if tested */}
-        {bestScore && (
-          <div className="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium">
-            <Award className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              {t.detail.bestScore
-                .replace('{score}', String(bestScore.score))
-                .replace('{total}', String(bestScore.total))}
-            </span>
-          </div>
-        )}
-
         {/* Action Buttons: Quiz me & Read Original */}
         <div className="flex items-center gap-3 pt-2 flex-wrap">
-          <button
-            onClick={() => onQuizMe(article)}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm bg-[#006A4E] text-white hover:bg-[#00543e] transition shadow-md shadow-[#006A4E]/20"
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span>{t.detail.quizMe}</span>
-          </button>
-
           <a
             href={article.link}
             target="_blank"
@@ -217,80 +193,75 @@ export const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({
         </div>
       </div>
 
-      {/* Summary Content Card */}
-      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 p-6 sm:p-8 shadow-xs space-y-5">
-        {article.ai_summary && (
-          <div className="p-4 rounded-2xl bg-[#006A4E]/5 dark:bg-emerald-950/20 border border-[#006A4E]/15 dark:border-emerald-800/30">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#006A4E] dark:text-emerald-400 uppercase tracking-wider mb-1.5">
-              <Sparkles className="w-4 h-4" />
-              <span>{language === 'bn' ? 'এআই সারসংক্ষেপ ও বিশ্লেষণ' : 'Executive Digest & Focus'}</span>
-            </div>
-            <p className="text-sm sm:text-base leading-relaxed text-stone-800 dark:text-stone-200">
-              {article.ai_summary}
+      {/* Summary + Key points */}
+      <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 p-5 sm:p-8 shadow-xs space-y-6">
+        <section>
+          <h2 className="flex items-center gap-2 text-xs font-bold text-[#006A4E] dark:text-emerald-400 uppercase tracking-wider mb-2">
+            <Sparkles className="w-4 h-4" />
+            <span>{language === 'bn' ? 'সারসংক্ষেপ' : 'Summary'}</span>
+          </h2>
+          <p className="text-[15px] sm:text-base leading-7 text-stone-800 dark:text-stone-200">
+            {article.ai_summary || article.summary || (language === 'bn' ? 'সারসংক্ষেপ এখনো তৈরি হয়নি। মূল প্রতিবেদন পড়ুন।' : 'Summary not ready yet — open the original article below.')}
+          </p>
+          {article.exam_angle && (
+            <p className="mt-3 text-sm leading-6 px-3 py-2 rounded-xl bg-amber-400/10 text-amber-900 dark:text-amber-200">
+              <strong>{language === 'bn' ? 'পরীক্ষার দৃষ্টিকোণ: ' : 'Exam angle: '}</strong>
+              {article.exam_angle}
             </p>
-          </div>
+          )}
+        </section>
+
+        {facts.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h2 className="text-xs font-bold text-[#006A4E] dark:text-emerald-400 uppercase tracking-wider">
+                {language === 'bn' ? 'মূল তথ্য' : 'Key points'}
+              </h2>
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
+                {t.detail.factsMemorized.replace('{checked}', String(checkedCount)).replace('{total}', String(facts.length))}
+              </span>
+            </div>
+            <ul className="space-y-2">
+              {facts.map((fact, index) => {
+                const checked = isFactChecked(fact);
+                return (
+                  <li key={index}>
+                    <button
+                      onClick={() => onToggleFactCheck(fact)}
+                      className={`w-full text-left px-3.5 py-3 rounded-2xl border transition flex items-start gap-3 ${
+                        checked
+                          ? 'bg-emerald-500/5 border-emerald-500/30'
+                          : 'bg-stone-50/70 dark:bg-stone-800/60 border-stone-200/80 dark:border-stone-700/80'
+                      }`}
+                      aria-pressed={checked}
+                    >
+                      <span className="mt-0.5 shrink-0">
+                        {checked ? <CheckSquare className="w-5 h-5 text-[#006A4E] dark:text-emerald-400" /> : <Square className="w-5 h-5 text-stone-400" />}
+                      </span>
+                      <span className={`text-sm leading-6 text-stone-800 dark:text-stone-200 ${checked ? 'opacity-60' : ''}`}>{fact}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-[11px] text-stone-500 dark:text-stone-400">
+              {article.facts_source === 'article'
+                ? language === 'bn' ? 'মূল প্রতিবেদনের বাক্য থেকে নেওয়া।' : 'Taken word-for-word from the original article.'
+                : language === 'bn' ? 'এআই দিয়ে তৈরি, মূল প্রতিবেদনের সংখ্যার সঙ্গে মিলিয়ে যাচাই করা।' : 'AI-written, numbers checked against the original article.'}
+            </p>
+          </section>
         )}
 
-        <div className="prose dark:prose-invert max-w-none text-stone-700 dark:text-stone-300 text-sm sm:text-base leading-relaxed">
-          <p>{article.summary}</p>
-        </div>
+        <a
+          href={article.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-2xl font-bold text-sm bg-[#006A4E] text-white hover:bg-[#00543e] transition"
+        >
+          <span>{(language === 'bn' ? 'পূর্ণ প্রতিবেদন পড়ুন — ' : 'Read full article on ') + article.source}</span>
+          <ExternalLink className="w-4 h-4" />
+        </a>
       </div>
-
-      {/* Key Facts to Memorize Checklist */}
-      {facts.length > 0 && (
-        <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 p-6 sm:p-8 shadow-xs space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100">
-                  {t.detail.keyFactsTitle}
-                </h2>
-                <p className="text-xs text-stone-500 dark:text-stone-400">
-                  {t.detail.keyFactsHint}
-                </p>
-              </div>
-            </div>
-
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300">
-              {t.detail.factsMemorized
-                .replace('{checked}', String(checkedCount))
-                .replace('{total}', String(facts.length))}
-            </span>
-          </div>
-
-          <div className="space-y-2.5 pt-2">
-            {facts.map((fact, index) => {
-              const checked = isFactChecked(fact);
-              return (
-                <button
-                  key={index}
-                  onClick={() => onToggleFactCheck(fact)}
-                  className={`w-full text-left p-3.5 rounded-2xl border transition flex items-start gap-3 group ${
-                    checked
-                      ? 'bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-500/30 text-stone-700 dark:text-stone-300'
-                      : 'bg-stone-50/60 dark:bg-stone-800/60 border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200'
-                  }`}
-                  aria-pressed={checked}
-                >
-                  <span className="mt-0.5 text-stone-400 group-hover:text-[#006A4E] transition shrink-0">
-                    {checked ? (
-                      <CheckSquare className="w-5 h-5 text-[#006A4E] dark:text-emerald-400" />
-                    ) : (
-                      <Square className="w-5 h-5" />
-                    )}
-                  </span>
-                  <span className={`text-xs sm:text-sm leading-relaxed ${checked ? 'line-through text-stone-500 dark:text-stone-400' : ''}`}>
-                    {fact}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Personal Candidate Study Notes */}
       <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 p-6 sm:p-8 shadow-xs space-y-4">
