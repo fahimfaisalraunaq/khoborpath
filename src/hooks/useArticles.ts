@@ -25,6 +25,7 @@ function sanitizeArticles(rawList: unknown): Article[] {
     const link = typeof r.link === 'string' && /^https?:\/\//.test(r.link) ? r.link : '';
     if (!link) return; // never show an article we cannot trace back to its newspaper
     const summary = typeof r.summary === 'string' ? r.summary : '';
+    if (/à¦|à§/.test(title + summary)) return; // garbled Bangla from an old collector run
     const ai_summary = typeof r.ai_summary === 'string' ? r.ai_summary : undefined;
 
     let key_facts: string[] | undefined = undefined;
@@ -44,6 +45,8 @@ function sanitizeArticles(rawList: unknown): Article[] {
     }
 
     const published = typeof r.published === 'string' ? r.published : new Date().toISOString();
+    const exam_angle = typeof r.exam_angle === 'string' ? r.exam_angle : undefined;
+    const facts_source = r.facts_source === 'article' ? ('article' as const) : undefined;
     const image = typeof r.image === 'string' && r.image.startsWith('https://') ? r.image : undefined;
 
     valid.push({
@@ -59,6 +62,8 @@ function sanitizeArticles(rawList: unknown): Article[] {
       exam_relevance,
       published,
       image,
+      exam_angle,
+      facts_source,
     });
   });
 
