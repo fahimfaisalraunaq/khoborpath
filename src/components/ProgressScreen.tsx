@@ -86,7 +86,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
       </div>
 
       {/* Top Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Streak Card */}
         <div className="p-5 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-2">
           <div className="flex items-center justify-between">
@@ -123,23 +123,6 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
           </p>
         </div>
 
-        {/* Quiz Avg Card */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-              {t.progress.quizAvgTitle}
-            </span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
-              <Award className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-3xl font-black text-stone-900 dark:text-stone-100">
-            {quizAverage}%
-          </div>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
-            {t.progress.quizAvgSub.replace('{count}', String(quizResultsList.length))}
-          </p>
-        </div>
       </div>
 
       {/* Category Reading Distribution Chart */}
