@@ -27,6 +27,8 @@ export interface Article {
   exam_relevance?: ExamRelevance;
   published: string;
   image?: string;
+  exam_angle?: string;
+  facts_source?: 'ai' | 'article';
 }
 
 export interface QuizQuestion {
