@@ -282,7 +282,8 @@ def pick_model() -> str | None:
             m = re.search(r"(\d+(?:\.\d+)?)", n)
             return (float(m.group(1)) if m else 0, "latest" in n)
         flash.sort(key=ver, reverse=True)
-        _MODEL_CACHE["candidates"] = flash[1:4]  # fallbacks if the newest one is slow or unavailable
+        lite = [n for n in names if "flash-lite" in n and not re.search(r"preview|exp", n)]
+        _MODEL_CACHE["candidates"] = flash[1:4] + sorted(lite, key=ver, reverse=True)[:2]  # fallbacks if the newest is slow/busy
         _MODEL_CACHE["name"] = flash[0] if flash else None
         print(f"AI model: {_MODEL_CACHE['name']}")
     except Exception as ex:
@@ -326,7 +327,7 @@ def ai_enrich(title: str, text: str) -> dict:
                 },
                 timeout=90,
             )
-            if r.status_code in (400, 404):
+            if r.status_code in (400, 404, 500, 502, 503, 504):
                 next_model(f"HTTP {r.status_code} {r.text[:150]}")
                 continue
             if r.status_code == 403:
