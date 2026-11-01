@@ -27,7 +27,6 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'feed' as TabType, label: t.tabs.feed, icon: Newspaper },
     { id: 'digest' as TabType, label: t.tabs.digest, icon: Sparkles },
     { id: 'saved' as TabType, label: t.tabs.saved, icon: Bookmark, badge: savedCount },
-    { id: 'quiz' as TabType, label: t.tabs.quiz, icon: HelpCircle },
     { id: 'progress' as TabType, label: t.tabs.progress, icon: BarChart3 },
     { id: 'settings' as TabType, label: t.tabs.settings, icon: Settings },
   ];
@@ -96,7 +95,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 pb-safe shadow-lg"
         aria-label="Mobile Navigation"
       >
-        <div className="grid grid-cols-6 h-16 max-w-lg mx-auto px-1">
+        <div className="grid grid-cols-5 h-16 max-w-lg mx-auto px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -120,7 +119,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] mt-1 tracking-tight truncate max-w-[50px] leading-tight">
+                <span className="text-[10px] mt-1 tracking-tight truncate max-w-[64px] leading-tight">
                   {item.label}
                 </span>
                 {isActive && (
