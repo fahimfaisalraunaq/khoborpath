@@ -1,9 +1,9 @@
 {
- "run_at": "2026-11-08T19:42:01.522656+00:00",
- "added": 86,
+ "run_at": "2026-11-08T23:44:49.923403+00:00",
+ "added": 32,
  "total": 1500,
- "ai_claims_rejected": 2,
- "ai_summaries": 17,
+ "ai_claims_rejected": 7,
+ "ai_summaries": 18,
  "ai_model": "gemini-3.5-flash-lite",
  "feeds": [
   {
@@ -34,8 +34,8 @@
    "source": "Prothom Alo (প্রথম আলো)",
    "url": "https://www.prothomalo.com/feed/",
    "ok": true,
-   "items": 45,
-   "newest": "2026-11-08T19:24:15+00:00",
+   "items": 6,
+   "newest": "2026-11-08T22:30:00+00:00",
    "error": null
   },
   {
@@ -59,7 +59,7 @@
    "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
    "ok": true,
    "items": 30,
-   "newest": "2026-11-08T19:10:42+00:00",
+   "newest": "2026-11-08T20:34:12+00:00",
    "error": null
   }
  ]
