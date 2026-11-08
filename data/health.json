@@ -1,9 +1,9 @@
 {
- "run_at": "2026-11-08T00:32:24.784592+00:00",
- "added": 27,
+ "run_at": "2026-11-08T07:22:32.638471+00:00",
+ "added": 90,
  "total": 1500,
  "ai_claims_rejected": 1,
- "ai_summaries": 19,
+ "ai_summaries": 18,
  "ai_model": "gemini-3.5-flash-lite",
  "feeds": [
   {
@@ -11,7 +11,7 @@
    "url": "https://www.thedailystar.net/opinion/editorial/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-11-07T12:04:06+00:00",
+   "newest": "2026-11-07T18:00:00+00:00",
    "error": null
   },
   {
@@ -19,7 +19,7 @@
    "url": "https://www.thedailystar.net/news/bangladesh/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-11-07T18:00:00+00:00",
+   "newest": "2026-11-08T03:42:44+00:00",
    "error": null
   },
   {
@@ -27,15 +27,15 @@
    "url": "https://www.thedailystar.net/business/rss.xml",
    "ok": true,
    "items": 10,
-   "newest": "2026-11-07T18:00:00+00:00",
+   "newest": "2026-11-08T06:43:28+00:00",
    "error": null
   },
   {
    "source": "Prothom Alo (প্রথম আলো)",
    "url": "https://www.prothomalo.com/feed/",
    "ok": true,
-   "items": 6,
-   "newest": "2026-11-07T22:30:00+00:00",
+   "items": 63,
+   "newest": "2026-11-08T07:00:00+00:00",
    "error": null
   },
   {
@@ -43,7 +43,7 @@
    "url": "https://www.tbsnews.net/bangladesh/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-07T18:55:00+00:00",
+   "newest": "2026-11-08T06:45:00+00:00",
    "error": null
   },
   {
@@ -51,7 +51,7 @@
    "url": "https://www.tbsnews.net/economy/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-07T14:00:00+00:00",
+   "newest": "2026-11-08T01:30:00+00:00",
    "error": null
   },
   {
@@ -59,7 +59,7 @@
    "url": "https://bonikbarta.com/sitemaps/sitemap-news-{date}.xml?path=00000000010000000001",
    "ok": true,
    "items": 30,
-   "newest": "2026-11-07T21:22:54+00:00",
+   "newest": "2026-11-08T07:06:57+00:00",
    "error": null
   }
  ]
