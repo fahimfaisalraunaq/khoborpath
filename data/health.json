@@ -1,9 +1,9 @@
 {
- "run_at": "2026-11-11T21:30:15.170690+00:00",
- "added": 109,
+ "run_at": "2026-11-12T02:57:45.469788+00:00",
+ "added": 28,
  "total": 1500,
- "ai_claims_rejected": 4,
- "ai_summaries": 10,
+ "ai_claims_rejected": 5,
+ "ai_summaries": 17,
  "ai_model": "gemini-3.5-flash-lite",
  "feeds": [
   {
@@ -34,8 +34,8 @@
    "source": "Prothom Alo (প্রথম আলো)",
    "url": "https://www.prothomalo.com/feed/",
    "ok": true,
-   "items": 33,
-   "newest": "2026-11-11T20:54:54+00:00",
+   "items": 27,
+   "newest": "2026-11-12T02:34:38+00:00",
    "error": null
   },
   {
