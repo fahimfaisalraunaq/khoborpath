@@ -1,9 +1,9 @@
 {
- "run_at": "2026-11-13T22:44:17.468294+00:00",
- "added": 60,
+ "run_at": "2026-11-14T03:10:12.944727+00:00",
+ "added": 23,
  "total": 1500,
- "ai_claims_rejected": 13,
- "ai_summaries": 14,
+ "ai_claims_rejected": 8,
+ "ai_summaries": 17,
  "ai_model": "gemini-3.5-flash-lite",
  "feeds": [
   {
@@ -34,8 +34,8 @@
    "source": "Prothom Alo (প্রথম আলো)",
    "url": "https://www.prothomalo.com/feed/",
    "ok": true,
-   "items": 11,
-   "newest": "2026-11-13T22:14:41+00:00",
+   "items": 23,
+   "newest": "2026-11-14T02:43:56+00:00",
    "error": null
   },
   {
@@ -43,7 +43,7 @@
    "url": "https://www.tbsnews.net/bangladesh/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-13T18:30:00+00:00",
+   "newest": "2026-11-14T01:30:00+00:00",
    "error": null
   },
   {
@@ -51,7 +51,7 @@
    "url": "https://www.tbsnews.net/economy/rss.xml",
    "ok": true,
    "items": 20,
-   "newest": "2026-11-13T16:00:00+00:00",
+   "newest": "2026-11-14T01:30:00+00:00",
    "error": null
   },
   {
